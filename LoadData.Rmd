@@ -1,0 +1,49 @@
+---
+title: "Data Preliminaries"
+author: "Theresa Smith"
+date: "17 October 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message=FALSE}
+library('tidyverse')
+library('lubridate')
+```
+
+```{r load, cache=TRUE}
+##extracted .zip from http://bit.ly/banesanprdata into ./Data
+sites = read.csv("./Data/sites.csv", stringsAsFactors = FALSE)
+vehicles = read.csv("./Data/vehicles.csv", stringsAsFactors = FALSE)
+observations = read.csv("./Data/observations.csv", stringsAsFactors = FALSE)
+
+observations_joined = left_join(observations, sites, by = c('site_id'='id'))%>%
+                left_join(vehicles, by = c('vehicle_id' = 'id'))%>%
+                mutate_if(is.character, as.factor)
+```
+
+```{r checks}
+observations_joined$t = ymd_hms(observations_joined$t)
+head(observations_joined)
+str(observations_joined)
+
+observations_joined%>%summarise_if(is.numeric, c('min','max'), na.rm = T)
+
+observations_joined$make = with(observations_joined, factor(make,
+                    levels(make)[order(table(make),decreasing = F)]))
+
+ggplot(observations_joined[1:1000,], aes(make))+geom_bar(aes(fill = make))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  theme(legend.position="none")
+
+observations_joined$relt=as.numeric((observations_joined$t-
+                                       min(observations_joined$t))/3600)
+ggplot(observations_joined, aes(relt))+geom_histogram(binwidth = 0.25)+
+  facet_wrap(~description)
+
+
+```
+
